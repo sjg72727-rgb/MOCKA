@@ -150,23 +150,37 @@ function setupEventListeners() {
         labelRegisterPhoto.classList.add('hidden');
 
         try {
-            // Run Tesseract OCR
-            const result = await Tesseract.recognize(file, 'kor+eng', {
-                logger: m => {
-                    if(m.status === 'recognizing text') {
-                        statusText.innerHTML = `메뉴를 읽고 있어요... (${Math.round(m.progress * 100)}%)<br><span style="font-size:0.8rem; color:var(--text-secondary)">(최대 10초 소요)</span>`;
-                    } else if (m.status === 'loading tesseract core' || m.status.includes('loading language')) {
-                        statusText.innerHTML = `AI 엔진 준비 중...<br><span style="font-size:0.8rem; color:var(--text-secondary)">(최초 1회만 다운로드가 필요합니다)</span>`;
-                    }
-                }
+            statusText.innerHTML = `AI가 메뉴를 분석하고 있어요...<br><span style="font-size:0.8rem; color:var(--text-secondary)">(약 5~10초 소요)</span>`;
+            
+            // Convert file to Base64
+            const reader = new FileReader();
+            const base64Promise = new Promise((resolve, reject) => {
+                reader.onload = () => {
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            const base64Image = await base64Promise;
+
+            // Send to Vercel Serverless Function
+            const response = await fetch('/api/extract-menu', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image: base64Image,
+                    mimeType: file.type
+                })
             });
 
-            const lines = result.data.text.split('\n')
-                .map(l => l.trim())
-                .filter(l => l.length > 1 && !/^[0-9\W]+$/.test(l));
-            
-            // Limit to top 8 menus
-            const menusToSave = lines.slice(0, 8);
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Server error');
+            }
+
+            const data = await response.json();
+            const menusToSave = data.menus || [];
             
             if (menusToSave.length > 0) {
                 // Save to Global State Option B
