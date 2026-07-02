@@ -17,8 +17,37 @@ module.exports = async function(req, res) {
 
         const prompt = "이 이미지는 카페의 메뉴판입니다. 이미지 속에 있는 음료와 디저트의 '메뉴 이름'만 추출해서 콤마(,)로 구분된 텍스트로만 대답해줘. 가격이나 사이즈, 부연 설명, 장식용 문구는 전부 제외하고 순수하게 메뉴 이름만 나열해줘. 예시: 아메리카노, 카페라떼, 초코 케이크";
 
-        // 다이렉트 REST API 호출 (가장 안정적인 v1 버전 명시)
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // 1단계: 사용자님의 API 키가 어떤 모델들에 접근 가능한지 동적으로 목록을 가져옵니다.
+        const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+        const modelsRes = await fetch(modelsUrl);
+        const modelsData = await modelsRes.json();
+
+        if (!modelsRes.ok) {
+            return res.status(500).json({ error: `권한 확인 실패: ${modelsData.error?.message}` });
+        }
+
+        // 사용 가능한 모델 목록 추출
+        const availableModels = modelsData.models || [];
+        
+        // 글/이미지를 생성할 수 있는(generateContent) 모델만 필터링
+        const generateModels = availableModels.filter(m => 
+            m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent')
+        );
+
+        if (generateModels.length === 0) {
+            return res.status(500).json({ error: `사용 가능한 AI 모델이 하나도 없습니다.` });
+        }
+
+        // 가장 똑똑한 모델부터 우선순위로 찾아냅니다. (Flash -> Pro -> Vision -> 아무거나)
+        let selectedModel = generateModels.find(m => m.name.includes('1.5-flash'));
+        if (!selectedModel) selectedModel = generateModels.find(m => m.name.includes('1.5-pro'));
+        if (!selectedModel) selectedModel = generateModels.find(m => m.name.includes('pro-vision'));
+        if (!selectedModel) selectedModel = generateModels[0]; // 없으면 목록에 있는 첫 번째 모델 강제 선택
+
+        const targetModelName = selectedModel.name; // 예: "models/gemini-1.5-flash" 또는 "models/gemini-pro-vision"
+
+        // 2단계: 찾아낸 가장 완벽한 모델 이름으로 실제 이미지 분석 요청을 보냅니다.
+        const url = `https://generativelanguage.googleapis.com/v1beta/${targetModelName}:generateContent?key=${apiKey}`;
 
         const payload = {
             contents: [{
@@ -44,15 +73,12 @@ module.exports = async function(req, res) {
 
         const data = await response.json();
 
-        // 구글 서버에서 에러를 뱉었을 경우 투명하게 클라이언트로 전달
         if (!response.ok) {
-            console.error('Gemini API Error Response:', data);
-            return res.status(500).json({ error: `구글 서버 거절: ${data.error?.message || '이유 불명'}` });
+            return res.status(500).json({ error: `(${targetModelName}) 거절: ${data.error?.message || '이유 불명'}` });
         }
 
         if (!data.candidates || data.candidates.length === 0) {
-            console.error('Gemini API No Candidates:', data);
-            return res.status(500).json({ error: 'AI가 응답을 생성하지 못했습니다 (안전 정책 차단 등).' });
+            return res.status(500).json({ error: 'AI가 이미지를 읽었으나 응답을 만들지 못했습니다.' });
         }
 
         const text = data.candidates[0].content.parts[0].text || '';
