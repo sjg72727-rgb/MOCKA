@@ -74,10 +74,16 @@
 
                     <div class="input-group">
                         <label>내가 마신 메뉴 사진 (선택)</label>
-                        <label class="upload-box" for="input-my-photo" id="label-my-photo">
-                            <i class="fa-solid fa-camera"></i>
-                            <span id="photo-my-text">사진 업로드</span>
-                        </label>
+                        <div class="photo-action-group">
+                            <button type="button" class="upload-box action-btn" id="btn-camera-my-photo">
+                                <i class="fa-solid fa-camera"></i>
+                                <span>사진 촬영</span>
+                            </button>
+                            <label class="upload-box action-btn" for="input-my-photo" id="label-my-photo">
+                                <i class="fa-regular fa-image"></i>
+                                <span id="photo-my-text">사진 업로드</span>
+                            </label>
+                        </div>
                         <input type="file" id="input-my-photo" accept="image/*" style="display:none;">
                     </div>
 
@@ -117,10 +123,16 @@
 
                     <div class="input-group">
                         <label>메뉴판 사진 업로드</label>
-                        <label class="upload-box" for="input-register-photo" id="label-register-photo">
-                            <i class="fa-solid fa-camera"></i>
-                            <span>메뉴판 사진 업로드</span>
-                        </label>
+                        <div class="photo-action-group">
+                            <button type="button" class="upload-box action-btn" id="btn-camera-register-photo">
+                                <i class="fa-solid fa-camera"></i>
+                                <span>사진 촬영</span>
+                            </button>
+                            <label class="upload-box action-btn" for="input-register-photo" id="label-register-photo">
+                                <i class="fa-regular fa-image"></i>
+                                <span>사진 업로드</span>
+                            </label>
+                        </div>
                         <input type="file" id="input-register-photo" accept="image/*" style="display:none;">
                     </div>
 
@@ -135,6 +147,23 @@
 
     <!-- Toast Message -->
     <div id="toast" class="toast hidden">메시지</div>
+
+    <!-- Camera Modal -->
+    <div id="camera-modal" class="camera-modal hidden">
+        <div class="camera-header">
+            <h3>사진 촬영</h3>
+            <button id="btn-close-camera" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="camera-view">
+            <video id="camera-video" autoplay playsinline></video>
+            <canvas id="camera-canvas" class="hidden"></canvas>
+        </div>
+        <div class="camera-controls">
+            <button id="btn-capture" class="capture-btn">
+                <div class="capture-inner"></div>
+            </button>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>

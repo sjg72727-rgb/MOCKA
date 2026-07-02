@@ -30,6 +30,7 @@ const inputCafeName = document.getElementById('input-cafe-name');
 const inputCafeMenu = document.getElementById('input-cafe-menu');
 const inputReview = document.getElementById('input-review');
 const inputMyPhoto = document.getElementById('input-my-photo');
+const btnCameraMyPhoto = document.getElementById('btn-camera-my-photo');
 const btnSubmit = document.getElementById('btn-submit');
 const photoMyText = document.getElementById('photo-my-text');
 const extractedMenuChips = document.getElementById('extracted-menu-chips');
@@ -38,6 +39,18 @@ const extractedMenuChips = document.getElementById('extracted-menu-chips');
 const inputRegisterCafeName = document.getElementById('input-register-cafe-name');
 const inputRegisterPhoto = document.getElementById('input-register-photo');
 const labelRegisterPhoto = document.getElementById('label-register-photo');
+const btnCameraRegisterPhoto = document.getElementById('btn-camera-register-photo');
+
+// Camera DOM
+const cameraModal = document.getElementById('camera-modal');
+const cameraVideo = document.getElementById('camera-video');
+const cameraCanvas = document.getElementById('camera-canvas');
+const btnCloseCamera = document.getElementById('btn-close-camera');
+const btnCapture = document.getElementById('btn-capture');
+
+// Camera State
+let currentStream = null;
+let cameraCallback = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -101,6 +114,33 @@ function closeSidebar() {
     setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
 }
 
+// Camera Functions
+async function openCamera(callback) {
+    cameraCallback = callback;
+    cameraModal.classList.remove('hidden');
+    try {
+        currentStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' },
+            audio: false
+        });
+        cameraVideo.srcObject = currentStream;
+    } catch (err) {
+        console.error("Camera access denied or error", err);
+        showToast('카메라 접근 권한이 필요합니다.');
+        closeCamera();
+    }
+}
+
+function closeCamera() {
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+    }
+    cameraVideo.srcObject = null;
+    cameraModal.classList.add('hidden');
+    cameraCallback = null;
+}
+
 // Event Listeners Setup
 function setupEventListeners() {
     // Top Left Header Buttons
@@ -128,69 +168,58 @@ function setupEventListeners() {
     });
 
     // -------- View: Register Menu (OCR) --------
-    // Intercept click on label to ensure Cafe Name is typed first
-    labelRegisterPhoto.addEventListener('click', (e) => {
-        const cafeName = inputRegisterCafeName.value.trim();
-        if(cafeName === '') {
-            e.preventDefault();
-            showToast('카페 이름을 먼저 입력해주세요!');
-            inputRegisterCafeName.focus();
-        }
-    });
+    
+    const compressImage = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const MAX_SIZE = 1200;
+                    if (width > height) {
+                        if (width > MAX_SIZE) {
+                            height *= MAX_SIZE / width;
+                            width = MAX_SIZE;
+                        }
+                    } else {
+                        if (height > MAX_SIZE) {
+                            width *= MAX_SIZE / height;
+                            height = MAX_SIZE;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    resolve(dataUrl.split(',')[1]);
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
 
-    inputRegisterPhoto.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const cafeName = inputRegisterCafeName.value.trim();
+    const processOcrRegistration = async (cafeName, fileOrBase64, isBase64 = false) => {
         const loading = document.getElementById('loading-ocr');
         const statusText = document.getElementById('ocr-status-text');
         
         loading.classList.remove('hidden');
-        labelRegisterPhoto.classList.add('hidden');
+        labelRegisterPhoto.parentElement.classList.add('hidden'); // Hide the photo-action-group
 
         try {
             statusText.innerHTML = `AI가 메뉴를 분석하고 있어요...<br><span style="font-size:0.8rem; color:var(--text-secondary)">(약 5~10초 소요)</span>`;
             
-            // Compress Image via Canvas
-            const compressImage = (file) => {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            let width = img.width;
-                            let height = img.height;
-                            const MAX_SIZE = 1200;
-                            if (width > height) {
-                                if (width > MAX_SIZE) {
-                                    height *= MAX_SIZE / width;
-                                    width = MAX_SIZE;
-                                }
-                            } else {
-                                if (height > MAX_SIZE) {
-                                    width *= MAX_SIZE / height;
-                                    height = MAX_SIZE;
-                                }
-                            }
-                            canvas.width = width;
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-                            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                            resolve(dataUrl.split(',')[1]);
-                        };
-                        img.onerror = reject;
-                        img.src = e.target.result;
-                    };
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-            };
-
-            statusText.innerHTML = `사진 최적화 중...<br><span style="font-size:0.8rem; color:var(--text-secondary)">(초고속 압축 중)</span>`;
-            const base64Image = await compressImage(file);
+            let base64Image = fileOrBase64;
+            if (!isBase64) {
+                statusText.innerHTML = `사진 최적화 중...<br><span style="font-size:0.8rem; color:var(--text-secondary)">(초고속 압축 중)</span>`;
+                base64Image = await compressImage(fileOrBase64);
+            }
             
             statusText.innerHTML = `AI가 메뉴를 분석하고 있어요...<br><span style="font-size:0.8rem; color:var(--text-secondary)">(약 5~10초 소요)</span>`;
             
@@ -217,7 +246,6 @@ function setupEventListeners() {
             const menusToSave = data.menus || [];
             
             if (menusToSave.length > 0) {
-                // Save to Global State Option B
                 extractedMenusByCafe[cafeName] = menusToSave;
                 showToast(`'${cafeName}'의 메뉴가 등록되었습니다!`);
             } else {
@@ -229,14 +257,79 @@ function setupEventListeners() {
 
         } catch (error) {
             console.error(error);
-            // 에러의 '진짜 원인'을 화면에 그대로 띄워주기
             showToast(`실패: ${error.message}`);
             resetRegisterForm();
         }
+    };
+
+    // Prevent clicking upload if name is empty
+    labelRegisterPhoto.addEventListener('click', (e) => {
+        const cafeName = inputRegisterCafeName.value.trim();
+        if(cafeName === '') {
+            e.preventDefault();
+            showToast('카페 이름을 먼저 입력해주세요!');
+            inputRegisterCafeName.focus();
+        }
+    });
+
+    inputRegisterPhoto.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const cafeName = inputRegisterCafeName.value.trim();
+        await processOcrRegistration(cafeName, file, false);
+    });
+
+    // Camera Capture for Register Menu
+    btnCameraRegisterPhoto.addEventListener('click', () => {
+        const cafeName = inputRegisterCafeName.value.trim();
+        if(cafeName === '') {
+            showToast('카페 이름을 먼저 입력해주세요!');
+            inputRegisterCafeName.focus();
+            return;
+        }
+        
+        openCamera(async (base64Image) => {
+            await processOcrRegistration(cafeName, base64Image, true);
+        });
+    });
+
+    // -------- Camera Modal Controls --------
+    btnCloseCamera.addEventListener('click', closeCamera);
+
+    btnCapture.addEventListener('click', () => {
+        if (!currentStream) return;
+        
+        const MAX_SIZE = 1200;
+        let width = cameraVideo.videoWidth;
+        let height = cameraVideo.videoHeight;
+        
+        if (width > height) {
+            if (width > MAX_SIZE) {
+                height *= MAX_SIZE / width;
+                width = MAX_SIZE;
+            }
+        } else {
+            if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height;
+                height = MAX_SIZE;
+            }
+        }
+        
+        cameraCanvas.width = width;
+        cameraCanvas.height = height;
+        const ctx = cameraCanvas.getContext('2d');
+        ctx.drawImage(cameraVideo, 0, 0, width, height);
+        
+        const fullDataUrl = cameraCanvas.toDataURL('image/jpeg', 0.8);
+        const base64Image = fullDataUrl.split(',')[1];
+        
+        if (cameraCallback) {
+            cameraCallback(base64Image, fullDataUrl);
+        }
+        closeCamera();
     });
 
     // -------- View: Add Record --------
-    // Add Record Validation Logic
     const validateForm = () => {
         const hasName = inputCafeName.value.trim().length > 0;
         const hasMenu = inputCafeMenu.value.trim().length > 0;
@@ -244,7 +337,6 @@ function setupEventListeners() {
         btnSubmit.disabled = !(hasName && hasMenu && hasReview);
     };
 
-    // Listen to Cafe Name input to trigger Chip display (Option B)
     inputCafeName.addEventListener('input', (e) => {
         validateForm();
         const typedName = e.target.value.trim();
@@ -260,7 +352,6 @@ function setupEventListeners() {
                 chip.className = 'menu-chip';
                 chip.textContent = safeMenu;
                 
-                // Click chip -> populate menu input
                 chip.addEventListener('click', () => {
                     inputCafeMenu.value = chip.textContent;
                     validateForm();
@@ -283,6 +374,13 @@ function setupEventListeners() {
             photoMyText.textContent = "사진 업로드";
             photoMyText.style.color = "var(--text-secondary)";
         }
+    });
+
+    btnCameraMyPhoto.addEventListener('click', () => {
+        openCamera((base64Image) => {
+            photoMyText.textContent = "촬영 완료";
+            photoMyText.style.color = "var(--accent-color)";
+        });
     });
 
     // Submit Logic
@@ -327,7 +425,9 @@ function resetRegisterForm() {
     inputRegisterCafeName.value = '';
     inputRegisterPhoto.value = '';
     document.getElementById('loading-ocr').classList.add('hidden');
-    document.getElementById('label-register-photo').classList.remove('hidden');
+    if (labelRegisterPhoto.parentElement) {
+        labelRegisterPhoto.parentElement.classList.remove('hidden');
+    }
 }
 
 // Render Feed
