@@ -41,6 +41,13 @@ const inputRegisterPhoto = document.getElementById('input-register-photo');
 const labelRegisterPhoto = document.getElementById('label-register-photo');
 const btnCameraRegisterPhoto = document.getElementById('btn-camera-register-photo');
 
+// Inputs (Add View Mini OCR)
+const btnCameraAddOcr = document.getElementById('btn-camera-add-ocr');
+const inputAddOcr = document.getElementById('input-add-ocr');
+const groupAddOcr = document.getElementById('group-add-ocr');
+const loadingAddOcr = document.getElementById('loading-add-ocr');
+const statusAddOcr = document.getElementById('add-ocr-status-text');
+
 // Camera DOM
 const cameraModal = document.getElementById('camera-modal');
 const cameraVideo = document.getElementById('camera-video');
@@ -205,12 +212,13 @@ function setupEventListeners() {
         });
     };
 
-    const processOcrRegistration = async (cafeName, fileOrBase64, isBase64 = false) => {
-        const loading = document.getElementById('loading-ocr');
-        const statusText = document.getElementById('ocr-status-text');
+    const processOcrRegistration = async (cafeName, fileOrBase64, isBase64 = false, isAddView = false) => {
+        const loading = isAddView ? loadingAddOcr : document.getElementById('loading-ocr');
+        const statusText = isAddView ? statusAddOcr : document.getElementById('ocr-status-text');
+        const parentGroup = isAddView ? groupAddOcr : labelRegisterPhoto.parentElement;
         
         loading.classList.remove('hidden');
-        labelRegisterPhoto.parentElement.classList.add('hidden'); // Hide the photo-action-group
+        parentGroup.classList.add('hidden');
 
         try {
             statusText.innerHTML = `AI가 메뉴를 분석하고 있어요...<br><span style="font-size:0.8rem; color:var(--text-secondary)">(약 5~10초 소요)</span>`;
@@ -247,18 +255,28 @@ function setupEventListeners() {
             
             if (menusToSave.length > 0) {
                 extractedMenusByCafe[cafeName] = menusToSave;
-                showToast(`'${cafeName}'의 메뉴가 등록되었습니다!`);
+                showToast(`'${cafeName}'의 메뉴가 추출되었습니다!`);
+                if (isAddView) {
+                    inputCafeName.dispatchEvent(new Event('input'));
+                }
             } else {
                 showToast('메뉴를 찾지 못했습니다. 다시 시도해주세요.');
             }
             
-            resetRegisterForm();
-            navigateTo('home', '한모금');
+            loading.classList.add('hidden');
+            parentGroup.classList.remove('hidden');
+            
+            if (!isAddView) {
+                resetRegisterForm();
+                navigateTo('home', '한모금');
+            }
 
         } catch (error) {
             console.error(error);
             showToast(`실패: ${error.message}`);
-            resetRegisterForm();
+            loading.classList.add('hidden');
+            parentGroup.classList.remove('hidden');
+            if (!isAddView) resetRegisterForm();
         }
     };
 
@@ -289,7 +307,36 @@ function setupEventListeners() {
         }
         
         openCamera(async (base64Image) => {
-            await processOcrRegistration(cafeName, base64Image, true);
+            await processOcrRegistration(cafeName, base64Image, true, false);
+        });
+    });
+
+    // -------- View: Add Record Mini OCR --------
+    inputAddOcr.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const cafeName = inputCafeName.value.trim();
+        if(cafeName === '') {
+            showToast('카페 이름을 먼저 입력해주세요!');
+            inputCafeName.focus();
+            inputAddOcr.value = '';
+            return;
+        }
+        await processOcrRegistration(cafeName, file, false, true);
+        inputAddOcr.value = '';
+    });
+
+    btnCameraAddOcr.addEventListener('click', () => {
+        const cafeName = inputCafeName.value.trim();
+        if(cafeName === '') {
+            showToast('카페 이름을 먼저 입력해주세요!');
+            inputCafeName.focus();
+            return;
+        }
+        
+        openCamera(async (base64Image) => {
+            await processOcrRegistration(cafeName, base64Image, true, true);
         });
     });
 
@@ -414,6 +461,7 @@ function resetAddForm() {
     inputCafeMenu.value = '';
     inputReview.value = '';
     inputMyPhoto.value = '';
+    inputAddOcr.value = '';
     photoMyText.textContent = "사진 업로드";
     photoMyText.style.color = "var(--text-secondary)";
     extractedMenuChips.innerHTML = '';

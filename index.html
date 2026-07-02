@@ -67,6 +67,27 @@
                     <div class="input-group">
                         <label>메뉴명 (필수)</label>
                         <input type="text" id="input-cafe-menu" class="text-input" placeholder="어떤 메뉴를 드셨나요?">
+                        
+                        <!-- Mini OCR Section for Add View -->
+                        <div class="ocr-mini-section">
+                            <p class="ocr-helper-text">메뉴판을 등록하면 메뉴를 쉽게 고를 수 있어요!</p>
+                            <div class="photo-action-group small-action-group" id="group-add-ocr">
+                                <button type="button" class="upload-box action-btn small-btn" id="btn-camera-add-ocr">
+                                    <i class="fa-solid fa-camera"></i>
+                                    <span>메뉴판 촬영</span>
+                                </button>
+                                <label class="upload-box action-btn small-btn" for="input-add-ocr" id="label-add-ocr">
+                                    <i class="fa-regular fa-image"></i>
+                                    <span>사진 업로드</span>
+                                </label>
+                            </div>
+                            <input type="file" id="input-add-ocr" accept="image/*" style="display:none;">
+                            <div id="loading-add-ocr" class="hidden">
+                                <div class="spinner spinner-small"></div>
+                                <p id="add-ocr-status-text">AI가 메뉴를 읽고 있어요...</p>
+                            </div>
+                        </div>
+
                         <div id="extracted-menu-chips" class="chips-container hidden">
                             <!-- Pre-extracted menu chips injected here -->
                         </div>

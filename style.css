@@ -453,6 +453,46 @@ body {
     font-size: 1.8rem;
     margin-bottom: 4px;
 }
+.ocr-mini-section {
+    margin-top: 10px;
+    margin-bottom: 15px;
+    padding: 12px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+}
+.ocr-helper-text {
+    font-size: 0.85rem;
+    color: var(--accent-color);
+    margin-bottom: 10px;
+    text-align: center;
+}
+.small-btn {
+    height: 70px;
+}
+.small-btn i {
+    font-size: 1.3rem;
+}
+.small-btn span {
+    font-size: 0.85rem;
+}
+#loading-add-ocr {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    gap: 8px;
+}
+.spinner-small {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+#add-ocr-status-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
 
 /* Camera Modal */
 .camera-modal {
