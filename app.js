@@ -229,7 +229,8 @@ function setupEventListeners() {
 
         } catch (error) {
             console.error(error);
-            showToast('이미지 인식에 실패했습니다.');
+            // 에러의 '진짜 원인'을 화면에 그대로 띄워주기
+            showToast(`실패: ${error.message}`);
             resetRegisterForm();
         }
     });
