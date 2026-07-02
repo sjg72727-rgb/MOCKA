@@ -15,7 +15,17 @@ module.exports = async function(req, res) {
             return res.status(400).json({ error: '이미지 데이터가 없습니다.' });
         }
 
-        const prompt = "이 이미지는 카페의 메뉴판입니다. 이미지 속에 있는 음료와 디저트의 '메뉴 이름'만 추출해서 콤마(,)로 구분된 텍스트로만 대답해줘. 가격이나 사이즈, 부연 설명, 장식용 문구는 전부 제외하고 순수하게 메뉴 이름만 나열해줘. 예시: 아메리카노, 카페라떼, 초코 케이크";
+        const prompt = `이 이미지는 카페의 메뉴판입니다. 이미지 속에 있는 음료와 디저트의 '메뉴 이름'과 '가격'을 모두 추출해서 한 줄에 하나씩(엔터로 구분) 대답해줘.
+중요한 규칙:
+1. 가격이 표(테이블) 형태로 되어 있어서 원두 이름(가로줄)과 음료 종류(세로줄)가 십자(X)로 만나는 형태라면, 두 이름을 기호(-)로 합쳐서 구체적으로 적어줘. (예: 녹턴-Americano 5,000원)
+2. Latte, Espresso 같은 큰 카테고리 아래에 메뉴들이 적혀있다면 카테고리 이름을 참고해서 적절히 적어줘.
+3. 가격은 항상 숫자 뒤에 '원'을 붙여서 통일해줘. (예: 5,000원)
+4. 오직 [메뉴이름 가격] 형태의 텍스트만 한 줄에 하나씩 출력해줘. 불필요한 부연 설명이나 기호(*, 번호 등)로 문장을 시작하지 마.
+예시 출력:
+녹턴-Americano 5,000원
+녹턴-Drip 6,000원
+과테말라-Americano 6,000원
+세레나데 6,000원`;
 
         // 1단계: 사용자님의 API 키가 어떤 모델들에 접근 가능한지 동적으로 목록을 가져옵니다.
         const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
@@ -83,8 +93,9 @@ module.exports = async function(req, res) {
 
         const text = data.candidates[0].content.parts[0].text || '';
 
+        // 줄바꿈으로 분리하고 불필요한 기호 제거
         const menus = text.split('\n')
-            .map(line => line.replace(/^- /, '').replace(/,/g, '').trim())
+            .map(line => line.replace(/^- /, '').replace(/^\d+\./, '').replace(/,/g, '').trim())
             .filter(line => line.length > 0);
 
         return res.status(200).json({ menus: menus });
