@@ -733,27 +733,44 @@ function renderFeed() {
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
                     <h3 style="margin:0;">${cafe.name}</h3>
-                    <button class="btn-delete-cafe icon-btn" style="color:var(--text-secondary); margin-top:-2px; margin-right:-5px;" aria-label="삭제">
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                    </button>
+                    <div style="position:relative;">
+                        <button class="btn-more-menu icon-btn" style="color:var(--text-secondary); margin-top:-2px; margin-right:-5px;" aria-label="메뉴">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <div class="action-dropdown hidden" style="position:absolute; top:35px; right:0; background:#2a2321; border:1px solid var(--glass-border); border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.6); z-index:20; min-width:110px; overflow:hidden;">
+                            <button class="btn-action-delete" style="background:transparent; color:#ff4d4d; border:none; padding:12px 16px; font-size:0.95rem; width:100%; text-align:left; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                                <i class="fa-solid fa-trash-can"></i>삭제하기
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <p style="margin:0;">나의 한모금이 ${cafeRecords.length}번 쌓여있습니다.</p>
             `;
             
-            const deleteBtn = card.querySelector('.btn-delete-cafe');
+            const moreMenuBtn = card.querySelector('.btn-more-menu');
+            const actionDropdown = card.querySelector('.action-dropdown');
+            const deleteBtn = card.querySelector('.btn-action-delete');
+
+            moreMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.action-dropdown').forEach(d => {
+                    if (d !== actionDropdown) d.classList.add('hidden');
+                });
+                actionDropdown.classList.toggle('hidden');
+            });
+
             deleteBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-                if(confirm(`'${cafe.name}' 및 관련 기록을 모두 삭제하시겠습니까?`)) {
-                    try {
-                        await deleteDoc(doc(db, "users", currentUser.uid, "cafes", cafe.id));
-                        cafeRecords.forEach(async (r) => {
-                            await deleteDoc(doc(db, "users", currentUser.uid, "records", r.id));
-                        });
-                        showToast(`'${cafe.name}' 삭제 완료`);
-                    } catch(err) {
-                        console.error(err);
-                        showToast('삭제 중 오류가 발생했습니다.');
-                    }
+                actionDropdown.classList.add('hidden');
+                try {
+                    await deleteDoc(doc(db, "users", currentUser.uid, "cafes", cafe.id));
+                    cafeRecords.forEach(async (r) => {
+                        await deleteDoc(doc(db, "users", currentUser.uid, "records", r.id));
+                    });
+                    showToast(`'${cafe.name}' 기록이 삭제되었습니다.`);
+                } catch(err) {
+                    console.error(err);
+                    showToast('삭제 중 오류가 발생했습니다.');
                 }
             });
 
