@@ -950,7 +950,13 @@ function displayMapPlaces(places) {
             kakaoMap.setCenter(placePosition);
             kakaoMap.setLevel(3);
             
-            mapInfoWindow.setContent('<div style="padding:5px;font-size:12px;color:black;">' + place.place_name + '</div>');
+            const infoHtml = `
+                <div style="padding:10px; font-size:14px; text-align:center; min-width: 150px; background: white;">
+                    <div style="font-weight:bold; margin-bottom: 8px; color: #333;">${place.place_name}</div>
+                    <button onclick="window.selectCafeFromMap()" style="background:var(--accent-color); color:white; border:none; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:600; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">카페 등록하기 &gt;</button>
+                </div>
+            `;
+            mapInfoWindow.setContent(infoHtml);
             mapInfoWindow.open(kakaoMap, marker);
             
             mapBottomSheet.classList.add('show');
@@ -965,6 +971,15 @@ function displayMapPlaces(places) {
 
     kakaoMap.setBounds(bounds);
 }
+
+window.selectCafeFromMap = function() {
+    if (!selectedCafeData) return;
+    inputCafeName.value = selectedCafeData.place_name;
+    inputCafeName.dispatchEvent(new Event('input')); // trigger menu chip loading
+    navigateTo('add', '기록하기');
+    mapBottomSheet.classList.remove('show');
+    mapInfoWindow.close();
+};
 
 function removeMapMarkers() {
     mapMarkers.forEach(marker => marker.setMap(null));
