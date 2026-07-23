@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, getDoc, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, getDoc, addDoc, query, orderBy, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
 // Firebase Configuration from User
 const firebaseConfig = {
@@ -729,10 +729,34 @@ function renderFeed() {
         if(cafeRecords.length > 0) {
             const card = document.createElement('div');
             card.className = 'cafe-card';
+            card.style.position = 'relative';
             card.innerHTML = `
-                <h3>${cafe.name}</h3>
-                <p>나의 한모금이 ${cafeRecords.length}번 쌓여있습니다.</p>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                    <h3 style="margin:0;">${cafe.name}</h3>
+                    <button class="btn-delete-cafe icon-btn" style="color:var(--text-secondary); margin-top:-2px; margin-right:-5px;" aria-label="삭제">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+                </div>
+                <p style="margin:0;">나의 한모금이 ${cafeRecords.length}번 쌓여있습니다.</p>
             `;
+            
+            const deleteBtn = card.querySelector('.btn-delete-cafe');
+            deleteBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if(confirm(`'${cafe.name}' 및 관련 기록을 모두 삭제하시겠습니까?`)) {
+                    try {
+                        await deleteDoc(doc(db, "users", currentUser.uid, "cafes", cafe.id));
+                        cafeRecords.forEach(async (r) => {
+                            await deleteDoc(doc(db, "users", currentUser.uid, "records", r.id));
+                        });
+                        showToast(`'${cafe.name}' 삭제 완료`);
+                    } catch(err) {
+                        console.error(err);
+                        showToast('삭제 중 오류가 발생했습니다.');
+                    }
+                }
+            });
+
             card.addEventListener('click', () => {
                 document.getElementById('detail-cafe-name').dataset.cafeId = cafe.id;
                 renderDetail(cafe.id);
