@@ -1,0 +1,12 @@
+{
+  "name": "hanmogeum-app",
+  "version": "2.0.0",
+  "description": "A Sip - Cafe Menu Recording App",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@google/generative-ai": "latest"
+  }
+}

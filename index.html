@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Tesseract.js for Browser OCR -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- Kakao Map SDK -->
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=09526096368eeab22235a98ce517b1c4&libraries=services"></script>
 </head>
 <body>
     <!-- Splash Screen -->
@@ -16,26 +16,14 @@
         <div class="splash-text">당신의 한모금을 기억하는 방법</div>
     </div>
 
-    <!-- Sidebar Overlay -->
-    <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
-    
-    <!-- Sidebar Navigation -->
-    <nav id="sidebar" class="sidebar">
-        <div class="sidebar-header">
-            <h2>메뉴</h2>
-            <button id="btn-close-sidebar" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <ul class="sidebar-menu">
-            <li id="nav-register-menu"><i class="fa-solid fa-camera"></i> 사전 메뉴판 등록하기</li>
-        </ul>
-    </nav>
+    <!-- Sidebar removed in favor of bottom nav -->
 
     <!-- Main Application -->
     <div id="app-container" class="hidden">
         <!-- Header -->
         <header id="app-header">
             <div class="header-left">
-                <button id="btn-menu" class="icon-btn"><i class="fa-solid fa-bars"></i></button>
+                <!-- Menu button removed -->
                 <button id="btn-back" class="icon-btn hidden"><i class="fa-solid fa-chevron-left"></i></button>
             </div>
             <h1 id="header-title">한모금</h1>
@@ -43,6 +31,35 @@
         </header>
 
         <main id="app-main">
+            <!-- 0. Login View -->
+            <section id="view-login" class="view">
+                <div class="empty-state login-state">
+                    <h2 class="login-title">MOCKA</h2>
+                    <button id="btn-login-google" class="btn-primary" style="background:#fff; color:#000; display:flex; align-items:center; justify-content:center; gap:10px;">
+                        <i class="fa-brands fa-google"></i> Google로 시작하기
+                    </button>
+                </div>
+            </section>
+
+            <!-- 0.5 Profile Setup View -->
+            <section id="view-profile-setup" class="view">
+                <div class="form-group" style="margin-top:40px; display:flex; flex-direction:column; align-items:center;">
+                    <h2 style="margin-bottom: 20px;">반갑습니다!</h2>
+                    <p style="color:var(--text-secondary); margin-bottom: 30px;">프로필을 설정해주세요.</p>
+                    
+                    <label for="input-profile-photo" class="profile-upload-wrapper">
+                        <img id="preview-profile-photo" src="" alt="Upload Profile" style="display:none;" class="profile-avatar-large">
+                        <div id="placeholder-profile-photo" class="profile-placeholder">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                    </label>
+                    <input type="file" id="input-profile-photo" accept="image/*" style="display:none;">
+
+                    <input type="text" id="input-profile-nickname" placeholder="닉네임 입력 (ex. 커알못)" class="input-text" style="text-align:center; margin-top:30px;">
+                </div>
+                <button id="btn-submit-profile" class="btn-primary" disabled>완료 및 시작하기</button>
+            </section>
+
             <!-- 1. Home View (Feed) -->
             <section id="view-home" class="view active">
                 <div id="empty-state" class="empty-state">
@@ -54,21 +71,61 @@
                     <!-- Cafe Cards will be injected here -->
                 </div>
                 
-                <!-- Floating Action Button -->
-                <button id="btn-fab" class="fab"><i class="fa-solid fa-plus"></i></button>
+                <!-- FAB removed -->
+            </section>
+
+            <!-- 1.5 Map Search View -->
+            <section id="view-map" class="view hidden" style="position: relative; height: 100%;">
+                <div id="map" style="width:100%; height:100%;"></div>
+                
+                <div class="map-search-overlay">
+                    <div class="map-search-bar">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="input-map-search" placeholder="지도에서 카페 검색 (예: 스타벅스)">
+                    </div>
+                    <ul id="map-autocomplete-list" class="map-autocomplete-list hidden"></ul>
+                </div>
+                
+                <div id="map-bottom-sheet" class="map-bottom-sheet hidden">
+                    <h3 id="sheet-cafe-name">카페 이름</h3>
+                    <p id="sheet-cafe-address">주소</p>
+                    <button id="btn-select-cafe" class="btn-primary">이 카페 기록하기</button>
+                </div>
             </section>
 
             <!-- 2. Add Record View -->
             <section id="view-add" class="view hidden">
                 <div class="add-container">
-                    <div class="input-group">
+                    <div class="input-group" style="position: relative;">
                         <label>카페 이름 (필수)</label>
-                        <input type="text" id="input-cafe-name" class="text-input" placeholder="어느 카페를 방문하셨나요?">
+                        <input type="text" id="input-cafe-name" class="text-input" placeholder="어느 카페를 방문하셨나요?" autocomplete="off">
+                        <ul id="autocomplete-add" class="autocomplete-list hidden"></ul>
                     </div>
 
                     <div class="input-group">
                         <label>메뉴명 (필수)</label>
                         <input type="text" id="input-cafe-menu" class="text-input" placeholder="어떤 메뉴를 드셨나요?">
+                        
+                        <!-- Mini OCR Section for Add View -->
+                        <div class="ocr-mini-section">
+                            <p class="ocr-helper-text">메뉴판을 등록하면 메뉴를 쉽게 고를 수 있어요!</p>
+                            <div class="photo-action-group small-action-group" id="group-add-ocr">
+                                <button type="button" class="upload-box action-btn small-btn" id="btn-camera-add-ocr">
+                                    <i class="fa-solid fa-camera"></i>
+                                    <span>메뉴판 촬영</span>
+                                </button>
+                                <label class="upload-box action-btn small-btn" for="input-add-ocr" id="label-add-ocr">
+                                    <i class="fa-regular fa-image"></i>
+                                    <span>사진 업로드</span>
+                                </label>
+                            </div>
+                            <input type="file" id="input-add-ocr" accept="image/*" style="display:none;">
+                            <div id="loading-add-ocr" class="hidden">
+                                <div class="spinner spinner-small"></div>
+                                <p id="add-ocr-status-text">AI가 메뉴를 읽고 있어요...</p>
+                            </div>
+                        </div>
+
                         <div id="extracted-menu-chips" class="chips-container hidden">
                             <!-- Pre-extracted menu chips injected here -->
                         </div>
@@ -76,10 +133,16 @@
 
                     <div class="input-group">
                         <label>내가 마신 메뉴 사진 (선택)</label>
-                        <label class="upload-box" for="input-my-photo" id="label-my-photo">
-                            <i class="fa-solid fa-camera"></i>
-                            <span id="photo-my-text">사진 업로드</span>
-                        </label>
+                        <div class="photo-action-group">
+                            <button type="button" class="upload-box action-btn" id="btn-camera-my-photo">
+                                <i class="fa-solid fa-camera"></i>
+                                <span>사진 촬영</span>
+                            </button>
+                            <label class="upload-box action-btn" for="input-my-photo" id="label-my-photo">
+                                <i class="fa-regular fa-image"></i>
+                                <span id="photo-my-text">사진 업로드</span>
+                            </label>
+                        </div>
                         <input type="file" id="input-my-photo" accept="image/*" style="display:none;">
                     </div>
 
@@ -102,6 +165,9 @@
                 <div class="timeline" id="detail-timeline">
                     <!-- Timeline records injected here -->
                 </div>
+
+                <!-- Floating Action Button for adding records to this specific cafe -->
+                <button id="btn-fab-detail" class="fab"><i class="fa-solid fa-plus"></i></button>
             </section>
 
             <!-- 4. Register Menu View (Sidebar OCR Flow) -->
@@ -112,17 +178,24 @@
                         <p>메뉴판을 미리 찍어두면 기록할 때 편하게 고를 수 있어요.</p>
                     </div>
 
-                    <div class="input-group">
+                    <div class="input-group" style="position: relative;">
                         <label>어느 카페의 메뉴판인가요? (필수)</label>
-                        <input type="text" id="input-register-cafe-name" class="text-input" placeholder="카페 이름을 입력하세요">
+                        <input type="text" id="input-register-cafe-name" class="text-input" placeholder="카페 이름을 입력하세요" autocomplete="off">
+                        <ul id="autocomplete-register" class="autocomplete-list hidden"></ul>
                     </div>
 
                     <div class="input-group">
                         <label>메뉴판 사진 업로드</label>
-                        <label class="upload-box" for="input-register-photo" id="label-register-photo">
-                            <i class="fa-solid fa-camera"></i>
-                            <span>메뉴판 사진 업로드</span>
-                        </label>
+                        <div class="photo-action-group">
+                            <button type="button" class="upload-box action-btn" id="btn-camera-register-photo">
+                                <i class="fa-solid fa-camera"></i>
+                                <span>사진 촬영</span>
+                            </button>
+                            <label class="upload-box action-btn" for="input-register-photo" id="label-register-photo">
+                                <i class="fa-regular fa-image"></i>
+                                <span>사진 업로드</span>
+                            </label>
+                        </div>
                         <input type="file" id="input-register-photo" accept="image/*" style="display:none;">
                     </div>
 
@@ -132,12 +205,58 @@
                     </div>
                 </div>
             </section>
+            <!-- 4. Settings View -->
+            <section id="view-settings" class="view hidden">
+                <div class="settings-container" style="padding: 20px;">
+                    <div id="settings-profile-info" style="display:flex; align-items:center; gap:15px; margin-bottom:40px;">
+                        <img id="settings-profile-img" src="" alt="Profile" class="profile-avatar-large" style="width: 80px; height: 80px;">
+                        <span id="settings-profile-name" style="font-size: 1.4rem; font-weight:600;">닉네임</span>
+                    </div>
+                    
+                    <button id="btn-logout" class="btn-primary" style="background:var(--glass-bg); color:var(--danger); border:1px solid rgba(224, 122, 95, 0.3);">
+                        <i class="fa-solid fa-right-from-bracket"></i> 로그아웃
+                    </button>
+                </div>
+            </section>
         </main>
+
+        <!-- Bottom Navigation -->
+        <nav id="bottom-nav" class="bottom-nav hidden">
+            <div class="nav-item active" data-target="home">
+                <i class="fa-solid fa-house"></i>
+                <span>내 기록</span>
+            </div>
+            <div class="nav-item" data-target="map">
+                <i class="fa-solid fa-plus-circle" style="font-size: 1.5rem; color:var(--accent-color);"></i>
+                <span>카페 등록</span>
+            </div>
+            <div class="nav-item" data-target="settings">
+                <i class="fa-solid fa-gear"></i>
+                <span>설정</span>
+            </div>
+        </nav>
     </div>
 
     <!-- Toast Message -->
     <div id="toast" class="toast hidden">메시지</div>
 
-    <script src="app.js"></script>
+    <!-- Camera Modal -->
+    <div id="camera-modal" class="camera-modal hidden">
+        <div class="camera-header">
+            <h3>사진 촬영</h3>
+            <button id="btn-close-camera" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="camera-view">
+            <video id="camera-video" autoplay playsinline></video>
+            <canvas id="camera-canvas" class="hidden"></canvas>
+        </div>
+        <div class="camera-controls">
+            <button id="btn-capture" class="capture-btn">
+                <div class="capture-inner"></div>
+            </button>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
 </body>
 </html>
