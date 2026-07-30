@@ -697,11 +697,36 @@ function setupEventListeners() {
         if (e.target.files && e.target.files[0]) {
             const reader = new FileReader();
             reader.onload = (event) => {
-                base64MyPhoto = event.target.result.replace("data:image/jpeg;base64,", "").replace("data:image/png;base64,", "");
-                photoMyText.textContent = "사진 첨부 완료";
-                photoMyText.style.color = "var(--accent-color)";
-                previewMyPhoto.src = event.target.result;
-                previewMyPhoto.style.display = 'block';
+                const img = new Image();
+                img.onload = () => {
+                    const MAX_SIZE = 1200;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > MAX_SIZE) {
+                            height *= MAX_SIZE / width;
+                            width = MAX_SIZE;
+                        }
+                    } else {
+                        if (height > MAX_SIZE) {
+                            width *= MAX_SIZE / height;
+                            height = MAX_SIZE;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    base64MyPhoto = compressedDataUrl.replace("data:image/jpeg;base64,", "");
+                    photoMyText.textContent = "사진 첨부 완료";
+                    photoMyText.style.color = "var(--accent-color)";
+                    previewMyPhoto.src = compressedDataUrl;
+                    previewMyPhoto.style.display = 'block';
+                };
+                img.src = event.target.result;
             };
             reader.readAsDataURL(e.target.files[0]);
         } else {
