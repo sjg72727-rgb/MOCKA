@@ -61,6 +61,10 @@ const navItems = document.querySelectorAll('.nav-item');
 const settingsProfileImg = document.getElementById('settings-profile-img');
 const settingsProfileName = document.getElementById('settings-profile-name');
 const btnLogout = document.getElementById('btn-logout');
+const btnEditProfile = document.getElementById('btn-edit-profile');
+
+const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23a4b6da'/><circle cx='50' cy='38' r='22' fill='%236e84b8'/><path d='M15 100 Q50 55 85 100' fill='%236e84b8'/></svg>";
+let isEditMode = false;
 
 // Profile Setup DOM
 const inputProfilePhoto = document.getElementById('input-profile-photo');
@@ -256,13 +260,17 @@ function setupEventListeners() {
                     if(userDoc.data().profileImageUrl) {
                         settingsProfileImg.src = "data:image/jpeg;base64," + userDoc.data().profileImageUrl;
                     } else {
-                        settingsProfileImg.src = "";
+                        settingsProfileImg.src = DEFAULT_AVATAR;
                     }
+                    settingsProfileImg.onerror = function() { this.src = DEFAULT_AVATAR; };
 
                     subscribeToData(user.uid);
                     navigateTo('home', 'MOCKA');
                 } else {
                     // Needs profile setup
+                    document.querySelector('#view-profile-setup h2').textContent = '반갑습니다!';
+                    document.querySelector('#view-profile-setup p').textContent = '프로필을 설정해주세요.';
+                    btnSubmitProfile.textContent = '완료 및 시작하기';
                     navigateTo('profileSetup', '프로필 설정');
                 }
             } catch (err) {
@@ -350,7 +358,12 @@ function setupEventListeners() {
 
             subscribeToData(currentUser.uid);
             showToast('환영합니다!');
-            navigateTo('home', 'MOCKA');
+            if (isEditMode) {
+                isEditMode = false;
+                navigateTo('settings', '설정');
+            } else {
+                navigateTo('home', 'MOCKA');
+            }
         } catch (error) {
             console.error("Profile save error:", error);
             showToast('저장에 실패했습니다.');
@@ -361,9 +374,38 @@ function setupEventListeners() {
 
     // Top Left Header Buttons
     btnBack.addEventListener('click', () => {
-        navigateTo('home', 'MOCKA');
+        if (isEditMode) {
+            isEditMode = false;
+            navigateTo('settings', '설정');
+        } else {
+            navigateTo('home', 'MOCKA');
+        }
         resetAddForm();
         resetRegisterForm();
+    });
+
+    btnEditProfile.addEventListener('click', () => {
+        isEditMode = true;
+        document.querySelector('#view-profile-setup h2').textContent = '프로필 수정';
+        document.querySelector('#view-profile-setup p').textContent = '닉네임과 사진을 변경해보세요.';
+        btnSubmitProfile.textContent = '저장하기';
+        inputProfileNickname.value = settingsProfileName.textContent;
+        btnSubmitProfile.disabled = false;
+        
+        if (settingsProfileImg.src && settingsProfileImg.src !== DEFAULT_AVATAR) {
+            previewProfilePhoto.src = settingsProfileImg.src;
+            previewProfilePhoto.style.display = 'block';
+            placeholderProfilePhoto.style.display = 'none';
+            if(settingsProfileImg.src.startsWith("data:image/jpeg;base64,")) {
+                base64ProfileImage = settingsProfileImg.src.replace("data:image/jpeg;base64,", "");
+            }
+        } else {
+            previewProfilePhoto.style.display = 'none';
+            placeholderProfilePhoto.style.display = 'flex';
+            base64ProfileImage = null;
+        }
+        
+        navigateTo('profileSetup', '프로필 수정');
     });
 
     // Bottom Navigation Logic

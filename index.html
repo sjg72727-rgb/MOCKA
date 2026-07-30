@@ -208,9 +208,10 @@
             <!-- 4. Settings View -->
             <section id="view-settings" class="view hidden">
                 <div class="settings-container" style="padding: 20px;">
-                    <div id="settings-profile-info" style="display:flex; align-items:center; gap:15px; margin-bottom:40px;">
-                        <img id="settings-profile-img" src="" alt="Profile" class="profile-avatar-large" style="width: 80px; height: 80px;">
+                    <div id="settings-profile-info" style="display:flex; align-items:center; gap:15px; margin-bottom:40px; position:relative;">
+                        <img id="settings-profile-img" src="" alt="Profile" class="profile-avatar-large" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: var(--glass-bg);">
                         <span id="settings-profile-name" style="font-size: 1.4rem; font-weight:600;">닉네임</span>
+                        <button id="btn-edit-profile" class="icon-btn" style="position:absolute; right:0; color:var(--text-secondary);"><i class="fa-solid fa-pen"></i></button>
                     </div>
                     
                     <button id="btn-logout" class="btn-primary" style="background:var(--glass-bg); color:var(--danger); border:1px solid rgba(224, 122, 95, 0.3);">
