@@ -605,7 +605,7 @@ body {
 /* Toast */
 .toast {
     position: fixed;
-    bottom: 40px;
+    bottom: 90px;
     left: 50%;
     transform: translateX(-50%);
     background: var(--accent-color);

@@ -82,6 +82,7 @@ const inputMyPhoto = document.getElementById('input-my-photo');
 const btnCameraMyPhoto = document.getElementById('btn-camera-my-photo');
 const btnSubmit = document.getElementById('btn-submit');
 const photoMyText = document.getElementById('photo-my-text');
+const previewMyPhoto = document.getElementById('preview-my-photo');
 const extractedMenuChips = document.getElementById('extracted-menu-chips');
 
 // Inputs (Register Menu Sidebar)
@@ -699,12 +700,15 @@ function setupEventListeners() {
                 base64MyPhoto = event.target.result.replace("data:image/jpeg;base64,", "").replace("data:image/png;base64,", "");
                 photoMyText.textContent = "사진 첨부 완료";
                 photoMyText.style.color = "var(--accent-color)";
+                previewMyPhoto.src = event.target.result;
+                previewMyPhoto.style.display = 'block';
             };
             reader.readAsDataURL(e.target.files[0]);
         } else {
             base64MyPhoto = null;
             photoMyText.textContent = "사진 업로드";
             photoMyText.style.color = "var(--text-secondary)";
+            previewMyPhoto.style.display = 'none';
         }
     });
 
@@ -713,6 +717,8 @@ function setupEventListeners() {
             base64MyPhoto = base64Image;
             photoMyText.textContent = "촬영 완료";
             photoMyText.style.color = "var(--accent-color)";
+            previewMyPhoto.src = "data:image/jpeg;base64," + base64Image;
+            previewMyPhoto.style.display = 'block';
         });
     });
 
@@ -742,7 +748,7 @@ function setupEventListeners() {
         await addDoc(collection(db, "users", currentUser.uid, "records"), newRecord);
         
         resetAddForm();
-        showToast('성공적으로 기록되었습니다!', 2000);
+        showToast('기록이 완료되었습니다.', 2000);
         navigateTo('home', 'MOCKA');
     });
 
@@ -760,6 +766,7 @@ function resetAddForm() {
     base64MyPhoto = null;
     photoMyText.textContent = "사진 업로드";
     photoMyText.style.color = "var(--text-secondary)";
+    if(previewMyPhoto) previewMyPhoto.style.display = 'none';
     extractedMenuChips.innerHTML = '';
     extractedMenuChips.classList.add('hidden');
     btnSubmit.disabled = true;
