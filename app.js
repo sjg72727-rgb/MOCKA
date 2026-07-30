@@ -455,7 +455,7 @@ function setupEventListeners() {
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-                    const MAX_SIZE = 1200;
+                    const MAX_SIZE = 800;
                     if (width > height) {
                         if (width > MAX_SIZE) {
                             height *= MAX_SIZE / width;
@@ -471,7 +471,7 @@ function setupEventListeners() {
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
                     resolve(dataUrl.split(',')[1]);
                 };
                 img.onerror = reject;
@@ -621,7 +621,7 @@ function setupEventListeners() {
     btnCapture.addEventListener('click', () => {
         if (!currentStream) return;
         
-        const MAX_SIZE = 1200;
+        const MAX_SIZE = 800;
         let width = cameraVideo.videoWidth;
         let height = cameraVideo.videoHeight;
         
@@ -642,7 +642,7 @@ function setupEventListeners() {
         const ctx = cameraCanvas.getContext('2d');
         ctx.drawImage(cameraVideo, 0, 0, width, height);
         
-        const fullDataUrl = cameraCanvas.toDataURL('image/jpeg', 0.8);
+        const fullDataUrl = cameraCanvas.toDataURL('image/jpeg', 0.5);
         const base64Image = fullDataUrl.split(',')[1];
         
         if (cameraCallback) {
@@ -709,7 +709,7 @@ function setupEventListeners() {
             reader.onload = (event) => {
                 const img = new Image();
                 img.onload = () => {
-                    const MAX_SIZE = 1200;
+                    const MAX_SIZE = 800;
                     let width = img.width;
                     let height = img.height;
                     if (width > height) {
@@ -728,7 +728,7 @@ function setupEventListeners() {
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.5);
                     
                     base64MyPhoto = compressedDataUrl.replace("data:image/jpeg;base64,", "");
                     photoMyText.textContent = "사진 첨부 완료";
@@ -800,7 +800,12 @@ function setupEventListeners() {
             navigateTo('detail', existingCafe.name);
         } catch (err) {
             console.error("Submit Error:", err);
-            showToast('저장 중 오류가 발생했습니다.');
+            // Firebase size limit error checking
+            if (err.message && err.message.includes('exceeds the limit')) {
+                showToast('사진 용량이 너무 큽니다. 다른 사진을 선택해주세요.', 4000);
+            } else {
+                showToast('저장 중 오류가 발생했습니다: ' + err.message, 4000);
+            }
             btnSubmit.disabled = false;
             btnSubmit.textContent = originalText;
         }
