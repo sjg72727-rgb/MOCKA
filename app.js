@@ -821,6 +821,10 @@ function renderDetail(cafeId) {
 function setupKakaoAutocomplete(inputElement, listElement) {
     let timeoutId;
     inputElement.addEventListener('input', (e) => {
+        if (e.detail && e.detail.skipAutocomplete) {
+            listElement.classList.add('hidden');
+            return;
+        }
         const query = e.target.value.trim();
         listElement.innerHTML = '';
         if (query.length === 0) {
@@ -846,7 +850,7 @@ function setupKakaoAutocomplete(inputElement, listElement) {
                         li.addEventListener('click', () => {
                             inputElement.value = place.place_name;
                             listElement.classList.add('hidden');
-                            inputElement.dispatchEvent(new Event('input')); // trigger validations & ocr chips
+                            inputElement.dispatchEvent(new CustomEvent('input', { detail: { skipAutocomplete: true } })); // trigger validations & ocr chips
                         });
                         listElement.appendChild(li);
                     });
@@ -1016,7 +1020,7 @@ function displayMapPlaces(places) {
 window.selectCafeFromMap = function() {
     if (!selectedCafeData) return;
     inputCafeName.value = selectedCafeData.place_name;
-    inputCafeName.dispatchEvent(new Event('input')); // trigger menu chip loading
+    inputCafeName.dispatchEvent(new CustomEvent('input', { detail: { skipAutocomplete: true } })); // trigger menu chip loading
     navigateTo('add', '기록하기');
     mapBottomSheet.classList.remove('show');
     mapInfoWindow.close();
