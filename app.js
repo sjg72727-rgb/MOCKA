@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Navigation Function
-function navigateTo(viewName, title = '한모금') {
+function navigateTo(viewName, title = 'MOCKA') {
     Object.values(views).forEach(view => {
         if(view) {
             view.classList.remove('active');
@@ -260,19 +260,19 @@ function setupEventListeners() {
                     }
 
                     subscribeToData(user.uid);
-                    navigateTo('home', '한모금');
+                    navigateTo('home', 'MOCKA');
                 } else {
                     // Needs profile setup
                     navigateTo('profileSetup', '프로필 설정');
                 }
             } catch (err) {
                 console.error("Error fetching user profile", err);
-                navigateTo('login', '한모금');
+                navigateTo('login', 'MOCKA');
             }
         } else {
             currentUser = null;
             unsubscribeData();
-            navigateTo('login', '한모금');
+            navigateTo('login', 'MOCKA');
         }
     });
 
@@ -350,7 +350,7 @@ function setupEventListeners() {
 
             subscribeToData(currentUser.uid);
             showToast('환영합니다!');
-            navigateTo('home', '한모금');
+            navigateTo('home', 'MOCKA');
         } catch (error) {
             console.error("Profile save error:", error);
             showToast('저장에 실패했습니다.');
@@ -361,7 +361,7 @@ function setupEventListeners() {
 
     // Top Left Header Buttons
     btnBack.addEventListener('click', () => {
-        navigateTo('home', '한모금');
+        navigateTo('home', 'MOCKA');
         resetAddForm();
         resetRegisterForm();
     });
@@ -370,7 +370,7 @@ function setupEventListeners() {
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             const targetView = item.dataset.target;
-            let title = '한모금';
+            let title = 'MOCKA';
             if (targetView === 'map') title = '카페 찾기';
             if (targetView === 'add') title = '기록하기';
             if (targetView === 'settings') title = '설정';
@@ -490,7 +490,7 @@ function setupEventListeners() {
             
             if (!isAddView) {
                 resetRegisterForm();
-                navigateTo('home', '한모금');
+                navigateTo('home', 'MOCKA');
             }
 
         } catch (error) {
@@ -678,7 +678,7 @@ function setupEventListeners() {
         
         resetAddForm();
         showToast('성공적으로 기록되었습니다!', 2000);
-        navigateTo('home', '한모금');
+        navigateTo('home', 'MOCKA');
     });
 
     // Setup Kakao Autocomplete
