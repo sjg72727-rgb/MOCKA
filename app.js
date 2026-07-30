@@ -248,6 +248,15 @@ function closeCamera() {
 
 // Event Listeners Setup
 function setupEventListeners() {
+    // Global click listener for closing dropdowns
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.record-action-menu')) {
+            document.querySelectorAll('.record-action-menu .dropdown-menu').forEach(d => {
+                d.classList.add('hidden');
+            });
+        }
+    });
+
     // Auth State Observer
     onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -749,39 +758,52 @@ function setupEventListeners() {
     });
 
     // Submit Logic
-    btnSubmit.addEventListener('click', async () => {
+    btnSubmit.addEventListener('click', async (e) => {
+        e.preventDefault();
         if(!currentUser) return;
-
-        const typedCafeName = inputCafeName.value.trim();
         
-        let existingCafe = cafes.find(c => c.name === typedCafeName);
-        if(!existingCafe) {
-            // Add Cafe to Firestore
-            const newCafeRef = doc(collection(db, "users", currentUser.uid, "cafes"));
-            await setDoc(newCafeRef, { name: typedCafeName });
-            existingCafe = { id: newCafeRef.id, name: typedCafeName };
-            cafes.push(existingCafe);
+        const originalText = btnSubmit.textContent;
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = "저장 중...";
+
+        try {
+            const typedCafeName = inputCafeName.value.trim();
+            
+            let existingCafe = cafes.find(c => c.name === typedCafeName);
+            if(!existingCafe) {
+                // Add Cafe to Firestore
+                const newCafeRef = doc(collection(db, "users", currentUser.uid, "cafes"));
+                await setDoc(newCafeRef, { name: typedCafeName });
+                existingCafe = { id: newCafeRef.id, name: typedCafeName };
+                cafes.push(existingCafe);
+            }
+
+            const newRecord = {
+                cafeId: existingCafe.id,
+                menu: inputCafeMenu.value.trim(),
+                review: inputReview.value.trim(),
+                myPhotoUrl: base64MyPhoto || "",
+                date: new Date().toISOString()
+            };
+            
+            // Add Record to Firestore
+            const docRef = await addDoc(collection(db, "users", currentUser.uid, "records"), newRecord);
+            newRecord.id = docRef.id;
+            records.push(newRecord);
+            
+            resetAddForm();
+            btnSubmit.textContent = originalText;
+            showToast('기록이 완료되었습니다.', 2000);
+            
+            document.getElementById('detail-cafe-name').dataset.cafeId = existingCafe.id;
+            renderDetail(existingCafe.id);
+            navigateTo('detail', existingCafe.name);
+        } catch (err) {
+            console.error("Submit Error:", err);
+            showToast('저장 중 오류가 발생했습니다.');
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = originalText;
         }
-
-        const newRecord = {
-            cafeId: existingCafe.id,
-            menu: inputCafeMenu.value.trim(),
-            review: inputReview.value.trim(),
-            myPhotoUrl: base64MyPhoto || "",
-            date: new Date().toISOString()
-        };
-        
-        // Add Record to Firestore
-        const docRef = await addDoc(collection(db, "users", currentUser.uid, "records"), newRecord);
-        newRecord.id = docRef.id;
-        records.push(newRecord);
-        
-        resetAddForm();
-        showToast('기록이 완료되었습니다.', 2000);
-        
-        document.getElementById('detail-cafe-name').dataset.cafeId = existingCafe.id;
-        renderDetail(existingCafe.id);
-        navigateTo('detail', existingCafe.name);
     });
 
     // Setup Kakao Autocomplete
@@ -917,13 +939,55 @@ function renderDetail(cafeId) {
 
         item.innerHTML = `
             <div class="timeline-dot"></div>
-            <div class="timeline-content">
-                <div class="timeline-date">${dateStr}</div>
+            <div class="timeline-content" style="position:relative;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div class="timeline-date">${dateStr}</div>
+                    <div class="record-action-menu" style="position:relative;">
+                        <i class="fa-solid fa-ellipsis-vertical btn-record-menu" style="color:var(--text-secondary); padding:5px 10px; cursor:pointer;"></i>
+                        <div class="dropdown-menu hidden" style="position:absolute; right:0; top:25px; background:var(--bg-card); border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.5); z-index:100; overflow:hidden; border: 1px solid var(--border-color);">
+                            <div class="btn-delete-record" style="padding:12px 20px; color:#ff4d4d; cursor:pointer; white-space:nowrap; font-size:0.95rem; display:flex; align-items:center; gap:8px;">
+                                <i class="fa-solid fa-trash"></i> 삭제하기
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="timeline-menu">${record.menu}</div>
                 <div class="timeline-review">"${record.review}"</div>
                 ${photoHtml}
             </div>
         `;
+        
+        const btnMenu = item.querySelector('.btn-record-menu');
+        const dropdown = item.querySelector('.dropdown-menu');
+        const btnDelete = item.querySelector('.btn-delete-record');
+
+        btnMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Close all others
+            document.querySelectorAll('.record-action-menu .dropdown-menu').forEach(d => {
+                if(d !== dropdown) d.classList.add('hidden');
+            });
+            dropdown.classList.toggle('hidden');
+        });
+
+        btnDelete.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if(confirm('이 기록을 정말 삭제할까요?')) {
+                try {
+                    dropdown.classList.add('hidden');
+                    await deleteDoc(doc(db, "users", currentUser.uid, "records", record.id));
+                    showToast('기록이 삭제되었습니다.');
+                    // Optimistic update
+                    records = records.filter(r => r.id !== record.id);
+                    renderDetail(cafeId);
+                    if(views.home.classList.contains('active')) renderFeed(); // just in case
+                } catch(err) {
+                    console.error(err);
+                    showToast('삭제 중 오류가 발생했습니다.');
+                }
+            }
+        });
+        
         timeline.appendChild(item);
     });
 }
