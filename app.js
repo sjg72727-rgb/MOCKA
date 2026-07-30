@@ -63,7 +63,7 @@ const settingsProfileName = document.getElementById('settings-profile-name');
 const btnLogout = document.getElementById('btn-logout');
 const btnEditProfile = document.getElementById('btn-edit-profile');
 
-const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23a4b6da'/><circle cx='50' cy='38' r='22' fill='%236e84b8'/><path d='M15 100 Q50 55 85 100' fill='%236e84b8'/></svg>";
+const DEFAULT_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23a4b6da'/><circle cx='50' cy='38' r='20' fill='%236e84b8'/><path d='M15 100 Q15 65 50 65 Q85 65 85 100' fill='%236e84b8'/></svg>";
 let isEditMode = false;
 
 // Profile Setup DOM
@@ -143,7 +143,7 @@ function navigateTo(viewName, title = 'MOCKA') {
     headerTitle.textContent = title;
     
     // Header Back button logic
-    if (viewName === 'login' || viewName === 'profileSetup' || viewName === 'home' || viewName === 'settings') {
+    if (viewName === 'login' || (viewName === 'profileSetup' && !isEditMode) || viewName === 'home' || viewName === 'settings') {
         btnBack.classList.add('hidden');
     } else {
         btnBack.classList.remove('hidden');
