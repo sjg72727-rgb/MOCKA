@@ -139,6 +139,7 @@ function navigateTo(viewName, title = 'MOCKA') {
     if(views[viewName]) {
         views[viewName].classList.remove('hidden');
         views[viewName].classList.add('active');
+        window.scrollTo(0, 0);
     }
     
     headerTitle.textContent = title;
