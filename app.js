@@ -734,6 +734,7 @@ function setupEventListeners() {
             const newCafeRef = doc(collection(db, "users", currentUser.uid, "cafes"));
             await setDoc(newCafeRef, { name: typedCafeName });
             existingCafe = { id: newCafeRef.id, name: typedCafeName };
+            cafes.push(existingCafe);
         }
 
         const newRecord = {
@@ -745,11 +746,16 @@ function setupEventListeners() {
         };
         
         // Add Record to Firestore
-        await addDoc(collection(db, "users", currentUser.uid, "records"), newRecord);
+        const docRef = await addDoc(collection(db, "users", currentUser.uid, "records"), newRecord);
+        newRecord.id = docRef.id;
+        records.push(newRecord);
         
         resetAddForm();
         showToast('기록이 완료되었습니다.', 2000);
-        navigateTo('home', 'MOCKA');
+        
+        document.getElementById('detail-cafe-name').dataset.cafeId = existingCafe.id;
+        renderDetail(existingCafe.id);
+        navigateTo('detail', existingCafe.name);
     });
 
     // Setup Kakao Autocomplete
