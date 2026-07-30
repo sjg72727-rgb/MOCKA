@@ -655,9 +655,22 @@ function setupEventListeners() {
         extractedMenuChips.innerHTML = '';
         extractedMenuChips.classList.add('hidden');
 
+        let allMenus = new Set();
+        
         if(typedName && extractedMenusByCafe[typedName]) {
-            const menus = extractedMenusByCafe[typedName];
-            menus.forEach(menuStr => {
+            extractedMenusByCafe[typedName].forEach(m => allMenus.add(m));
+        }
+        
+        if(typedName) {
+            const existingCafe = cafes.find(c => c.name === typedName);
+            if (existingCafe) {
+                const pastRecords = records.filter(r => r.cafeId === existingCafe.id && r.menu);
+                pastRecords.forEach(r => allMenus.add(r.menu));
+            }
+        }
+
+        if(allMenus.size > 0) {
+            Array.from(allMenus).forEach(menuStr => {
                 const safeMenu = menuStr.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 const chip = document.createElement('div');
                 chip.className = 'menu-chip';
@@ -677,11 +690,19 @@ function setupEventListeners() {
     inputCafeMenu.addEventListener('input', validateForm);
     inputReview.addEventListener('input', validateForm);
 
+    let base64MyPhoto = null;
+
     inputMyPhoto.addEventListener('change', (e) => {
         if (e.target.files && e.target.files[0]) {
-            photoMyText.textContent = "사진 첨부 완료";
-            photoMyText.style.color = "var(--accent-color)";
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                base64MyPhoto = event.target.result.replace("data:image/jpeg;base64,", "").replace("data:image/png;base64,", "");
+                photoMyText.textContent = "사진 첨부 완료";
+                photoMyText.style.color = "var(--accent-color)";
+            };
+            reader.readAsDataURL(e.target.files[0]);
         } else {
+            base64MyPhoto = null;
             photoMyText.textContent = "사진 업로드";
             photoMyText.style.color = "var(--text-secondary)";
         }
@@ -689,6 +710,7 @@ function setupEventListeners() {
 
     btnCameraMyPhoto.addEventListener('click', () => {
         openCamera((base64Image) => {
+            base64MyPhoto = base64Image;
             photoMyText.textContent = "촬영 완료";
             photoMyText.style.color = "var(--accent-color)";
         });
@@ -712,6 +734,7 @@ function setupEventListeners() {
             cafeId: existingCafe.id,
             menu: inputCafeMenu.value.trim(),
             review: inputReview.value.trim(),
+            myPhotoUrl: base64MyPhoto || "",
             date: new Date().toISOString()
         };
         
@@ -734,6 +757,7 @@ function resetAddForm() {
     inputReview.value = '';
     inputMyPhoto.value = '';
     inputAddOcr.value = '';
+    base64MyPhoto = null;
     photoMyText.textContent = "사진 업로드";
     photoMyText.style.color = "var(--text-secondary)";
     extractedMenuChips.innerHTML = '';
@@ -846,12 +870,19 @@ function renderDetail(cafeId) {
         
         const item = document.createElement('div');
         item.className = 'timeline-item';
+        
+        let photoHtml = '';
+        if (record.myPhotoUrl) {
+            photoHtml = `<div style="margin-top:10px;"><img src="data:image/jpeg;base64,${record.myPhotoUrl}" style="max-width:100%; border-radius:8px; display:block;"></div>`;
+        }
+
         item.innerHTML = `
             <div class="timeline-dot"></div>
             <div class="timeline-content">
                 <div class="timeline-date">${dateStr}</div>
                 <div class="timeline-menu">${record.menu}</div>
                 <div class="timeline-review">"${record.review}"</div>
+                ${photoHtml}
             </div>
         `;
         timeline.appendChild(item);
